@@ -10,9 +10,13 @@ use sc_cli::SubstrateCli;
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;
 
+fn chain_name() -> String {
+	"Aga".into()
+}
+
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		format!("{} Node", chain_name())
 	}
 
 	fn impl_version() -> String {
@@ -36,9 +40,13 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
+		if id.is_empty() {
+			return Err("Not specific which chain to run.".into());
+		}
 		Ok(match id {
 			"dev" => Box::new(chain_spec::development_config()?),
 			"" | "local" => Box::new(chain_spec::local_testnet_config()?),
+			"aga" => Box::new(chain_spec::aga_config()?),
 			path => {
 				Box::new(chain_spec::ChainSpec::from_json_file(std::path::PathBuf::from(path))?)
 			},
