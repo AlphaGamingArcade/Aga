@@ -45,6 +45,10 @@ pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "p
 pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 
+# asset conversion
+pallet-asset-conversion = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
+pallet-asset-conversion-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
+
 # primitives
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
@@ -108,6 +112,8 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
+	"pallet-asset-conversion/std",
+	"pallet-asset-conversion-tx-payment/std",
 
 	"pallet-assets/std",
 	"pallet-authorship/std",

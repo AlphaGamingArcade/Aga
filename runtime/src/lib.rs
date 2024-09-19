@@ -315,63 +315,24 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
-// Create the runtime by composing the FRAME pallets that were previously configured.
-#[frame_support::runtime]
-mod runtime {
-	#[runtime::runtime]
-	#[runtime::derive(
-		RuntimeCall,
-		RuntimeEvent,
-		RuntimeError,
-		RuntimeOrigin,
-		RuntimeFreezeReason,
-		RuntimeHoldReason,
-		RuntimeSlashReason,
-		RuntimeLockId,
-		RuntimeTask
-	)]
-	pub struct Runtime;
 
-	#[runtime::pallet_index(0)]
-	pub type System = frame_system;
-
-	#[runtime::pallet_index(1)]
-	pub type Timestamp = pallet_timestamp;
-
-	#[runtime::pallet_index(2)]
-	pub type Aura = pallet_aura;
-
-	#[runtime::pallet_index(3)]
-	pub type Grandpa = pallet_grandpa;
-
-	#[runtime::pallet_index(4)]
-	pub type Balances = pallet_balances;
-
-	#[runtime::pallet_index(5)]
-	pub type TransactionPayment = pallet_transaction_payment;
-
-	#[runtime::pallet_index(6)]
-	pub type Sudo = pallet_sudo;
-
-	// Include the custom logic from the pallet-template in the runtime.
-	#[runtime::pallet_index(7)]
-	pub type TemplateModule = pallet_template;
-
-	#[runtime::pallet_index(8)]
-	pub type Assets = pallet_assets;
-
-	#[runtime::pallet_index(9)]
-	pub type RandomnessCollectiveFlip = pallet_insecure_randomness_collective_flip;
-
-	#[runtime::pallet_index(10)]
-	pub type Utility = pallet_utility;
-
-	#[runtime::pallet_index(11)]
-	pub type Authorship = pallet_authorship;
-
-	#[runtime::pallet_index(12)]
-	pub type Contracts = pallet_contracts;
-}
+construct_runtime!(
+	pub enum Runtime {
+		System: frame_system = 0,
+		Timestamp: pallet_timestamp = 1,
+		Aura: pallet_aura = 2,
+		Grandpa: pallet_grandpa = 3,
+		Balances: pallet_balances = 4,
+		TransactionPayment: pallet_transaction_payment = 5,
+		Sudo: pallet_sudo = 6,
+		TemplateModule: pallet_template = 7,
+		Assets: pallet_assets = 8,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 9,
+		Utility: pallet_utility = 10,
+		Authorship: pallet_authorship = 11,
+		Contracts: pallet_contracts = 12,
+	}
+);
 
 /// The address format for describing accounts.
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
