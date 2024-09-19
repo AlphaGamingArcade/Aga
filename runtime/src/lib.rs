@@ -23,6 +23,7 @@ use sp_version::RuntimeVersion;
 
 use frame_support::{
 	dispatch::DispatchClass,
+	traits::tokens::fungible::NativeOrWithId,
 	genesis_builder_helper::{build_config, create_default_config},
 };
 use frame_system::limits::{BlockLength, BlockWeights};
@@ -328,7 +329,7 @@ construct_runtime!(
 		TemplateModule: pallet_template = 7,
 		Assets: pallet_assets::<Instance1> = 8,
 		PoolAssets: pallet_assets::<Instance2> = 9,
-		// AssetConversion: pallet_asset_conversion = 10,
+		AssetConversion: pallet_asset_conversion = 10,
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 11,
 		Utility: pallet_utility = 12,
 		Authorship: pallet_authorship = 13,
@@ -560,24 +561,24 @@ impl_runtime_apis! {
 		}
 	}
 
-	// impl pallet_asset_conversion::AssetConversionApi<
-	// Block,
-	// Balance,
-	// u32,
-	// > for Runtime
-	// {
-	// 	fn quote_price_exact_tokens_for_tokens(asset1: u32, asset2: u32, amount: Balance, include_fee: bool) -> Option<Balance> {
-	// 		AssetConversion::quote_price_exact_tokens_for_tokens(asset1, asset2, amount, include_fee)
-	// 	}
+	impl pallet_asset_conversion::AssetConversionApi<
+		Block,
+		Balance,
+		NativeOrWithId<u32>,
+	> for Runtime
+	{
+		fn quote_price_exact_tokens_for_tokens(asset1: NativeOrWithId<u32>, asset2: NativeOrWithId<u32>, amount: Balance, include_fee: bool) -> Option<Balance> {
+			AssetConversion::quote_price_exact_tokens_for_tokens(asset1, asset2, amount, include_fee)
+		}
 
-	// 	fn quote_price_tokens_for_exact_tokens(asset1: u32, asset2: u32, amount: Balance, include_fee: bool) -> Option<Balance> {
-	// 		AssetConversion::quote_price_tokens_for_exact_tokens(asset1, asset2, amount, include_fee)
-	// 	}
+		fn quote_price_tokens_for_exact_tokens(asset1: NativeOrWithId<u32>, asset2: NativeOrWithId<u32>, amount: Balance, include_fee: bool) -> Option<Balance> {
+			AssetConversion::quote_price_tokens_for_exact_tokens(asset1, asset2, amount, include_fee)
+		}
 
-	// 	fn get_reserves(asset1: u32, asset2: u32) -> Option<(Balance, Balance)> {
-	// 		AssetConversion::get_reserves(asset1, asset2).ok()
-	// 	}
-	// }
+		fn get_reserves(asset1: NativeOrWithId<u32>, asset2: NativeOrWithId<u32>) -> Option<(Balance, Balance)> {
+			AssetConversion::get_reserves(asset1, asset2).ok()
+		}
+	}
 
 
 	impl pallet_contracts::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash, EventRecord>

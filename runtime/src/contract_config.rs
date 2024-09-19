@@ -86,9 +86,6 @@ impl pallet_contracts::Config for Runtime {
 	type Debug = ();
 	type ApiVersion = ();
 	type Migrations = ();
-	#[cfg(feature = "parachain")]
-	type Xcm = pallet_xcm::Pallet<Self>;
-	#[cfg(not(feature = "parachain"))]
 	type Xcm = ();
 
 	type UploadOrigin = EnsureSigned<Self::AccountId>;

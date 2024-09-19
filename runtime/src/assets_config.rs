@@ -30,7 +30,6 @@ parameter_types! {
 }
 
 pub type TrustBackedAssetsInstance = pallet_assets::Instance1;
-type TrustBackedAssetsCall = pallet_assets::Call<Runtime, TrustBackedAssetsInstance>;
 impl pallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = u128;
@@ -89,32 +88,31 @@ impl pallet_assets::Config<PoolAssetsInstance> for Runtime {
 	type BenchmarkHelper = ();
 }
 
-// pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeOrWithId<u32>, AccountId>;
-// pub type PoolIdToAccountId = pallet_asset_conversion::AccountIdConverter<AssetConversionPalletId, (NativeOrWithId<u32>, NativeOrWithId<u32>)>;
-// pub type AscendingLocator = pallet_asset_conversion::Ascending<u128, NativeOrWithId<u32>, PoolIdToAccountId>;
-// pub type WithFirstAssetLocator = pallet_asset_conversion::WithFirstAsset<Native, u128, NativeOrWithId<u32>, PoolIdToAccountId>;
+pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeOrWithId<u32>, AccountId>;
+pub type AscendingLocator = pallet_asset_conversion::Ascending<AccountId, NativeOrWithId<u32>>;
+pub type WithFirstAssetLocator = pallet_asset_conversion::WithFirstAsset<Native, AccountId, NativeOrWithId<u32>>;
 
-// impl pallet_asset_conversion::Config for Runtime {
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type Balance = <Self as pallet_balances::Config>::Balance;
-// 	type HigherPrecisionBalance = u128;
-// 	type AssetKind = NativeOrWithId<u32>;
-// 	type Assets = NativeAndAssets;
-// 	type PoolId = (Self::AssetKind, Self::AssetKind);
-// 	type PoolLocator = pallet_asset_conversion::Chain<WithFirstAssetLocator, AscendingLocator>;
-// 	type PoolAssetId = u32;
-// 	type PoolAssets = PoolAssets;
-// 	type PoolSetupFee = ConstU128<100>; // should be more or equal to the existential deposit
-// 	type PoolSetupFeeAsset = Native;
-// 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
-// 	type PalletId = AssetConversionPalletId;
-// 	type WeightInfo = ();
-// 	type LPFee = ConstU32<3>; // means 0.3%
-// 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-// 	type MaxSwapPathLength = ConstU32<4>;
-// 	type MintMinLiquidity = ConstU128<100>; // 100 is good enough when the main currency has 12 decimals.
-// 	#[cfg(feature = "runtime-benchmarks")]
-// 	type BenchmarkHelper = ();
-// }
+impl pallet_asset_conversion::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Balance = <Self as pallet_balances::Config>::Balance;
+	type HigherPrecisionBalance = u128;
+	type AssetKind = NativeOrWithId<u32>;
+	type Assets = NativeAndAssets;
+	type PoolId = (Self::AssetKind, Self::AssetKind);
+	type PoolLocator = pallet_asset_conversion::Chain<WithFirstAssetLocator, AscendingLocator>;
+	type PoolAssetId = u32;
+	type PoolAssets = PoolAssets;
+	type PoolSetupFee = ConstU128<100>; // should be more or equal to the existential deposit
+	type PoolSetupFeeAsset = Native;
+	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
+	type PalletId = AssetConversionPalletId;
+	type WeightInfo = ();
+	type LPFee = ConstU32<3>; // means 0.3%
+	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
+	type MaxSwapPathLength = ConstU32<4>;
+	type MintMinLiquidity = ConstU128<100>; // 100 is good enough when the main currency has 12 decimals.
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
 
 
