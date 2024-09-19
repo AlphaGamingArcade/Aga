@@ -326,11 +326,13 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment = 5,
 		Sudo: pallet_sudo = 6,
 		TemplateModule: pallet_template = 7,
-		Assets: pallet_assets = 8,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 9,
-		Utility: pallet_utility = 10,
-		Authorship: pallet_authorship = 11,
-		Contracts: pallet_contracts = 12,
+		Assets: pallet_assets::<Instance1> = 8,
+		PoolAssets: pallet_assets::<Instance2> = 9,
+		// AssetConversion: pallet_asset_conversion = 10,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 11,
+		Utility: pallet_utility = 12,
+		Authorship: pallet_authorship = 13,
+		Contracts: pallet_contracts = 14,
 	}
 );
 
@@ -557,6 +559,26 @@ impl_runtime_apis! {
 			TransactionPayment::length_to_fee(length)
 		}
 	}
+
+	// impl pallet_asset_conversion::AssetConversionApi<
+	// Block,
+	// Balance,
+	// u32,
+	// > for Runtime
+	// {
+	// 	fn quote_price_exact_tokens_for_tokens(asset1: u32, asset2: u32, amount: Balance, include_fee: bool) -> Option<Balance> {
+	// 		AssetConversion::quote_price_exact_tokens_for_tokens(asset1, asset2, amount, include_fee)
+	// 	}
+
+	// 	fn quote_price_tokens_for_exact_tokens(asset1: u32, asset2: u32, amount: Balance, include_fee: bool) -> Option<Balance> {
+	// 		AssetConversion::quote_price_tokens_for_exact_tokens(asset1, asset2, amount, include_fee)
+	// 	}
+
+	// 	fn get_reserves(asset1: u32, asset2: u32) -> Option<(Balance, Balance)> {
+	// 		AssetConversion::get_reserves(asset1, asset2).ok()
+	// 	}
+	// }
+
 
 	impl pallet_contracts::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash, EventRecord>
 		for Runtime
