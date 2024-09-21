@@ -1,4 +1,4 @@
-use crate::{AccountId, Balance, Balances, Runtime, RuntimeEvent, PoolAssets, Assets};
+use crate::{AccountId, Balance, Balances, Runtime, RuntimeEvent, PoolAssets, Assets, NativeAndAssetId};
 use frame_support::{
 	parameter_types, ord_parameter_types,
 	traits::{
@@ -53,7 +53,7 @@ impl pallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
-	pub const Native: NativeOrWithId<u32> = NativeOrWithId::Native;
+	pub const Native: NativeAndAssetId = NativeOrWithId::Native;
 	pub storage LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -88,15 +88,15 @@ impl pallet_assets::Config<PoolAssetsInstance> for Runtime {
 	type BenchmarkHelper = ();
 }
 
-pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeOrWithId<u32>, AccountId>;
-pub type AscendingLocator = pallet_asset_conversion::Ascending<AccountId, NativeOrWithId<u32>>;
-pub type WithFirstAssetLocator = pallet_asset_conversion::WithFirstAsset<Native, AccountId, NativeOrWithId<u32>>;
+pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeAndAssetId, AccountId>;
+pub type AscendingLocator = pallet_asset_conversion::Ascending<AccountId, NativeAndAssetId>;
+pub type WithFirstAssetLocator = pallet_asset_conversion::WithFirstAsset<Native, AccountId, NativeAndAssetId>;
 
 impl pallet_asset_conversion::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = <Self as pallet_balances::Config>::Balance;
 	type HigherPrecisionBalance = u128;
-	type AssetKind = NativeOrWithId<u32>;
+	type AssetKind = NativeAndAssetId;
 	type Assets = NativeAndAssets;
 	type PoolId = (Self::AssetKind, Self::AssetKind);
 	type PoolLocator = pallet_asset_conversion::Chain<WithFirstAssetLocator, AscendingLocator>;
