@@ -314,8 +314,8 @@ parameter_types! {
 	pub const ExecutiveBody: BodyId = BodyId::Executive;
 }
 
-pub type AssetId = u32;
-impl pallet_assets::Config for Runtime {
+pub type TrustBackedAssetsInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type AssetId = AssetId;
@@ -732,6 +732,33 @@ pub fn slice_to_generalkey(key: &[u8]) -> Junction {
 	}
 }
 
+
+pub type PoolAssetsInstance = pallet_assets::Instance2;
+pub type AssetId = u32;
+impl pallet_assets::Config<PoolAssetsInstance> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Balance = Balance;
+	type AssetId = AssetId;
+	type AssetIdParameter = codec::Compact<u32>;
+	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+	type ForceOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type AssetDeposit = AssetDeposit;
+	type AssetAccountDeposit = AssetAccountDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = AssetsStringLimit;
+	type RemoveItemsLimit = ConstU32<1000>;
+	type Freezer = ();
+	type Extra = ();
+	type CallbackHandle = ();
+	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub struct Runtime {
@@ -743,13 +770,14 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>} = 8,
-		SygmaAccessSegregator: sygma_access_segregator::{Pallet, Call, Storage, Event<T>} = 9,
-		SygmaBasicFeeHandler: sygma_basic_feehandler::{Pallet, Call, Storage, Event<T>} = 10,
-		SygmaBridge: sygma_bridge::{Pallet, Call, Storage, Event<T>} = 11,
-		SygmaFeeHandlerRouter: sygma_fee_handler_router::{Pallet, Call, Storage, Event<T>} = 12,
-		SygmaPercentageFeeHandler: sygma_percentage_feehandler::{Pallet, Call, Storage, Event<T>} = 13,
-		ParachainInfo: pallet_parachain_info = 20,
+		Assets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 8,
+		PoolAssets: pallet_assets::<Instance2>::{Pallet, Call, Storage, Event<T>} = 9,
+		SygmaAccessSegregator: sygma_access_segregator::{Pallet, Call, Storage, Event<T>} = 10,
+		SygmaBasicFeeHandler: sygma_basic_feehandler::{Pallet, Call, Storage, Event<T>} = 11,
+		SygmaBridge: sygma_bridge::{Pallet, Call, Storage, Event<T>} = 12,
+		SygmaFeeHandlerRouter: sygma_fee_handler_router::{Pallet, Call, Storage, Event<T>} = 13,
+		SygmaPercentageFeeHandler: sygma_percentage_feehandler::{Pallet, Call, Storage, Event<T>} = 14,
+		ParachainInfo: pallet_parachain_info = 15,
 	}
 );
 
