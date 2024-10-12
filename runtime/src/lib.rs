@@ -312,13 +312,6 @@ impl pallet_template::Config for Runtime {
 	type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_xbridge::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type WeightInfo = pallet_xbridge::weights::SubstrateWeight<Runtime>;
-	type Currency = Balances;
-}
-
 impl pallet_utility::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -343,8 +336,7 @@ construct_runtime!(
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 11,
 		Utility: pallet_utility = 12,
 		Authorship: pallet_authorship = 13,
-		Contracts: pallet_contracts = 14,
-		XBridge: pallet_xbridge = 15,
+		Contracts: pallet_contracts = 14
 	}
 );
 
