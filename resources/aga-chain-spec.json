@@ -3,6 +3,7 @@
   "id": "aga",
   "chainType": "Live",
   "bootNodes": [],
+  "chainId": 171,
   "telemetryEndpoints": null,
   "protocolId": "aga",
   "properties": {
