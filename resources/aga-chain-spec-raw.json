@@ -1,6 +1,6 @@
 {
-  "name": "Aga",
-  "id": "aga",
+  "name": "Aga Testnet",
+  "id": "aga_testnet",
   "chainType": "Live",
   "bootNodes": [],
   "telemetryEndpoints": null,

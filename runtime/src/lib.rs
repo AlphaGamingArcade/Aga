@@ -17,6 +17,8 @@ use sp_runtime::{
 	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
+use sp_runtime::traits::AccountIdConversion;
+use frame_support::PalletId;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
@@ -110,7 +112,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 106,
+	spec_version: 104,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -319,6 +321,63 @@ impl pallet_utility::Config for Runtime {
 	type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	// Make sure put same value with `construct_runtime`
+	pub const AccessSegregatorPalletIndex: u8 = 15;
+	pub const BridgePalletIndex: u8 = 16;
+	// pub const BasicFeeHandlerPalletIndex: u8 = 10;
+	// pub const FeeHandlerRouterPalletIndex: u8 = 12;
+	// pub const PercentageFeeHandlerRouterPalletIndex: u8 = 13;
+	// RegisteredExtrinsics here registers all valid (pallet index, extrinsic_name) paris
+	// make sure to update this when adding new access control extrinsic
+	pub RegisteredExtrinsics: Vec<(u8, Vec<u8>)> = [
+		(AccessSegregatorPalletIndex::get(), b"grant_access".to_vec()),
+		(BridgePalletIndex::get(), b"register_domain".to_vec()),
+		(BridgePalletIndex::get(), b"unregister_domain".to_vec()),
+		(BridgePalletIndex::get(), b"transfer".to_vec()),
+		(BridgePalletIndex::get(), b"set_fee".to_vec()),
+		(BridgePalletIndex::get(), b"execute_proposal".to_vec()),
+		// (BridgePalletIndex::get(), b"pause_bridge".to_vec()),
+		// (BridgePalletIndex::get(), b"unpause_bridge".to_vec()),
+		// (BridgePalletIndex::get(), b"retry".to_vec()),
+		// (BridgePalletIndex::get(), b"pause_all_bridges".to_vec()),
+		// (BridgePalletIndex::get(), b"unpause_all_bridges".to_vec()),
+		// (FeeHandlerRouterPalletIndex::get(), b"set_fee_handler".to_vec()),
+		// (PercentageFeeHandlerRouterPalletIndex::get(), b"set_fee_rate".to_vec()),
+	].to_vec();
+}
+
+
+impl aga_access_segregator::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type BridgeCommitteeOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type PalletIndex = AccessSegregatorPalletIndex;
+	type Extrinsics = RegisteredExtrinsics;
+	type WeightInfo = aga_access_segregator::weights::SygmaWeightInfo<Runtime>;
+}
+
+parameter_types! {
+	// TreasuryAccount is an substrate account and currently used for substrate -> EVM bridging fee collection
+	// TreasuryAccount address: 5ELLU7ibt5ZrNEYRwohtaRBDBa3TzcWwwPELBPSWWd2mbgv3
+	pub BridgeAccountNativeFee: AccountId = AccountId::new([100u8; 32]);
+	// BridgeAccountNative: 5EYCAe5jLbHcAAMKvLFSXgCTbPrLgBJusvPwfKcaKzuf5X5e
+	pub BridgeAccountNative: AccountId = AgaBridgePalletId::get().into_account_truncating();
+	// AgaBridgePalletId is the palletIDl
+	// this is used as the replacement of handler address in the ProposalExecution event
+	pub const AgaBridgePalletId: PalletId = PalletId(*b"aga/0001");
+}
+
+// This bridge only support AGA Coin
+impl aga_bridge::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AssetKind = Balance;
+	type NativeBalances = Balances;
+	type TransferReserveAccount = BridgeAccountNative;
+	type FeeReserveAccount = BridgeAccountNativeFee;
+	type PalletId = AgaBridgePalletId;
+	type PalletIndex = BridgePalletIndex;
+	type WeightInfo = aga_bridge::weights::SubstrateWeight<Runtime>;
+}
 
 construct_runtime!(
 	pub enum Runtime {
@@ -336,7 +395,9 @@ construct_runtime!(
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 11,
 		Utility: pallet_utility = 12,
 		Authorship: pallet_authorship = 13,
-		Contracts: pallet_contracts = 14
+		Contracts: pallet_contracts = 14,
+		AgaAccessSegregator: aga_access_segregator = 15,
+		AgaBridge: aga_bridge = 16
 	}
 );
 

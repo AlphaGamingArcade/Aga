@@ -51,6 +51,7 @@ impl pallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type CallbackHandle = ();
 }
 
+
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
 	pub const Native: NativeAndAssetId = NativeOrWithId::Native;
