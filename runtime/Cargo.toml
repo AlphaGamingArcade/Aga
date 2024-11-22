@@ -50,6 +50,7 @@ pallet-asset-conversion = { git = "https://github.com/paritytech/polkadot-sdk", 
 pallet-asset-conversion-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
 
 # primitives
+hex-literal = { version = "0.4.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false, features = [
