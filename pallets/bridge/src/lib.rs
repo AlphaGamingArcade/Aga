@@ -18,7 +18,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::traits::fungible::{NativeOrWithId, Inspect, Mutate};
 	use aga_traits::{
-		ChainID, DomainID, TransferType, DepositNonce
+		ChainID, DomainID, DepositNonce
 	};
 	use frame_support::traits::tokens::Preservation;
 	use scale_info::prelude::vec::Vec;
@@ -26,17 +26,23 @@ pub mod pallet {
 	use frame_support::PalletId;
 	use sp_io::hashing::keccak_256;
 	use frame_support::sp_runtime::traits::AccountIdConversion;
+	use frame_support::sp_runtime::{SaturatedConversion, Saturating};
 
 	#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, RuntimeDebug)]
 	pub struct Proposal {
 		pub origin_domain_id: DomainID,
 		pub deposit_nonce: DepositNonce,
+		pub resource_id: [u8; 32],
 		pub data: Vec<u8>,
 	}
 
 	// Allows easy access our Pallet's `Balance` type. Comes from `Fungible` interface.
     pub type BalanceOf<T> =
         <<T as Config>::NativeBalances as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+	// Allows Easy access to accounts
+	// let admin = T::Lookup::lookup(admin)?;
+	// pub type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+
 	// This includes the native and assets type
 	pub type NativeAndAssetId = NativeOrWithId<u32>;
 
@@ -65,6 +71,8 @@ pub mod pallet {
 		type FeeReserveAccount: Get<Self::AccountId>;
 		/// Config ID for the current pallet instance
 		type PalletId: Get<PalletId>;
+		/// ResourceId type for 32-byte identifiers.
+		type ResourceId: Get<[u8; 32]>;
 		/// Current pallet index defined in runtime
 		type PalletIndex: Get<u8>;
 		/// A type representing the weights required by the dispatchables of this pallet.
@@ -86,12 +94,20 @@ pub mod pallet {
 	/// Mapping fungible asset id to corresponding fee amount
 	#[pallet::storage]
 	#[pallet::getter(fn asset_fees)]
-	pub type AssetFees<T: Config> = StorageMap<_, Twox64Concat, DomainID, BalanceOf<T>>;
+	pub type AssetFees<T: Config> = StorageMap<_, Twox64Concat, DomainID, u128>;
 
 	/// Deposit counter of dest domain
 	#[pallet::storage]
 	#[pallet::getter(fn deposit_counts)]
 	pub type DepositCounts<T> = StorageMap<_, Twox64Concat, DomainID, DepositNonce, ValueQuery>;
+
+	/// Bridge Pause indicator
+	/// Bridge is unpaused initially, until pause
+	/// After granted access setup, bridge should be paused until ready to unpause
+	#[pallet::storage]
+	#[pallet::getter(fn is_paused)]
+	pub type IsPaused<T> = StorageMap<_, Twox64Concat, DomainID, bool, ValueQuery>;
+
 
 	/// Mark whether a deposit nonce was used. Used to mark execution status of a proposal.
 	#[pallet::storage]
@@ -113,10 +129,10 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Deposit
 		Deposit { 
-			dest_domain_id: DomainID, 
+			dest_domain_id: DomainID,
+			resource_id: [u8; 32],
 			sender: T::AccountId,
-			deposit_nonce: DepositNonce, 
-			transfer_type: TransferType,
+			deposit_nonce: DepositNonce,
 			deposit_data: Vec<u8>,
 		},
 		/// When proposal was executed successfully
@@ -137,24 +153,18 @@ pub mod pallet {
 			domain_id: DomainID, 
 			chain_id: ChainID 
 		},
-		/// Transferred
-		Transferred { 
-			from: T::AccountId,
-			to: T::AccountId,
-			amount: BalanceOf<T>, 
-		},
 		/// A user has successfully set a new value.
 		FeeSet {
 			/// The new value set.
 			domain_id: DomainID,
 			/// Amount
-			amount: BalanceOf<T>
+			amount: u128
 		},
 		/// When bridge fee is collected
 		FeeCollected {
 			fee_payer: T::AccountId,
 			dest_domain_id: DomainID,
-			fee_amount: BalanceOf<T>,
+			fee_amount: u128,
 		},
 		/// When proposal was faild to execute
 		FailedHandlerExecution {
@@ -162,6 +172,18 @@ pub mod pallet {
 			origin_domain_id: DomainID,
 			deposit_nonce: DepositNonce,
 		},
+		/// When all bridges are paused
+		AllBridgePaused { sender: T::AccountId },
+		/// When all bridges are unpaused
+		AllBridgeUnpaused { sender: T::AccountId },
+		/// When bridge is paused
+		/// args: [dest_domain_id]
+		BridgePaused { dest_domain_id: DomainID },
+		/// When bridge is unpaused
+		/// args: [dest_domain_id]
+		BridgeUnpaused { dest_domain_id: DomainID },
+		/// TEST 
+		TestAddress { address: Vec<u8> }
 	}
 
 	#[pallet::error]
@@ -175,17 +197,74 @@ pub mod pallet {
 		DepositNonceOverflow,
 		EmptyProposalList,
 		ProposalAlreadyComplete,
-		InvalidDepositData
+		InvalidDepositData,
+		Overflow,
+		Underflow,
+		InvalidDecimalConversion,
+		DecodingAccountIdFailed,
+		InvalidAccountId,
+		/// Bridge is paused
+		BridgePaused,
+		/// Bridge is unpaused
+		BridgeUnpaused,
 	}
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Pause bridge, this would lead to bridge transfer failure before it being unpaused.
 		#[pallet::call_index(0)]
+		#[pallet::weight(< T as Config >::WeightInfo::pause_bridge())]
+		pub fn pause_bridge(origin: OriginFor<T>, dest_domain_id: DomainID) -> DispatchResult {
+			ensure!(
+				<aga_access_segregator::pallet::Pallet<T>>::has_access(
+					<T as Config>::PalletIndex::get(),
+					b"pause_bridge".to_vec(),
+					origin
+				),
+				Error::<T>::AccessDenied
+			);
+			ensure!(DestDomainIds::<T>::get(dest_domain_id), Error::<T>::DestDomainNotSupported);
+
+			// Mark as paused
+			IsPaused::<T>::insert(dest_domain_id, true);
+
+			// Emit BridgePause event
+			Self::deposit_event(Event::BridgePaused { dest_domain_id });
+			Ok(())
+		}
+
+		/// Unpause bridge.
+		#[pallet::call_index(1)]
+		#[pallet::weight(< T as Config >::WeightInfo::unpause_bridge())]
+		pub fn unpause_bridge(origin: OriginFor<T>, dest_domain_id: DomainID) -> DispatchResult {
+			ensure!(
+				<aga_access_segregator::pallet::Pallet<T>>::has_access(
+					<T as Config>::PalletIndex::get(),
+					b"unpause_bridge".to_vec(),
+					origin
+				),
+				Error::<T>::AccessDenied
+			);
+			ensure!(DestDomainIds::<T>::get(dest_domain_id), Error::<T>::DestDomainNotSupported);
+
+			// make sure the current status is paused
+			ensure!(IsPaused::<T>::get(dest_domain_id), Error::<T>::BridgeUnpaused);
+
+			// Mark as unpaused
+			IsPaused::<T>::insert(dest_domain_id, false);
+
+			// Emit BridgeUnpause event
+			Self::deposit_event(Event::BridgeUnpaused { dest_domain_id });
+			Ok(())
+		}
+
+
+		#[pallet::call_index(2)]
 		#[pallet::weight(<T as pallet::Config>::WeightInfo::register_domain())]
 		pub fn register_domain(
 			origin: OriginFor<T>,
 			dest_domain_id: DomainID,
-			dest_chain_id: ChainID,
+			dest_chain_id: ChainID
 		) -> DispatchResult {
 			ensure!(
 				<aga_access_segregator::pallet::Pallet<T>>::has_access(
@@ -212,7 +291,7 @@ pub mod pallet {
 		}
 
 		/// Mark the give dest domainID with chainID to be disabled
-		#[pallet::call_index(1)]
+		#[pallet::call_index(3)]
 		#[pallet::weight(< T as Config >::WeightInfo::unregister_domain())]
 		pub fn unregister_domain(
 			origin: OriginFor<T>,
@@ -252,48 +331,61 @@ pub mod pallet {
 		}
 
 		/// Mark the give dest domainID with chainID to be disabled
-		#[pallet::call_index(2)]
+		#[pallet::call_index(4)]
 		#[pallet::weight(< T as Config >::WeightInfo::deposit())]
 		pub fn deposit(
 			origin: OriginFor<T>,
 			dest_domain_id: DomainID,
-			dest_chain_recipient: Vec<u8>,
-			amount: BalanceOf<T>,
+			deposit_data: Vec<u8>,
 		) -> DispatchResult {
-			let sender = ensure_signed(origin)?;
-			let transfer_type = TransferType::FungibleTransfer; // Default to fungible for now
-			let amount_u128: u128 = amount.try_into().unwrap_or_else(|_| {
-				// Handle the conversion error, in case the BalanceOf<T> type is not directly convertible
-				// You can return an error or take some default action if required
-				panic!("Failed to convert BalanceOf<T> to u128");
-			});
-
-			// Ensure that domain is registered
-			ensure!(DestDomainIds::<T>::get(dest_domain_id), Error::<T>::DestDomainNotSupported);
-			// Ensure fee is set
-			let fee = AssetFees::<T>::get(dest_domain_id).ok_or(Error::<T>::MissingFeeConfig)?;
+			let sender = ensure_signed(origin.clone())?;
+			ensure!(
+				DestDomainIds::<T>::get(dest_domain_id), 
+				Error::<T>::DestDomainNotSupported
+			);
 			
 			// Get the sender's current balance
 			let sender_balance = T::NativeBalances::balance(&sender);
 
-			// Calculate the total amount required (fee + transfer amount)
-			let total_amount_needed = fee + amount;
+			let (amount, recipient) = Self::extract_deposit_data(&deposit_data)?;
+			
+			ensure!(!IsPaused::<T>::get(dest_domain_id), Error::<T>::BridgePaused);
+
+			// Let total amount to send in balance type
+			let amount_in_balance = amount.saturated_into::<BalanceOf<T>>();
 
 			// Ensure the sender has enough balance to cover both the transfer and the fee
-			ensure!(sender_balance >= total_amount_needed, Error::<T>::InsufficientBalance);
-			let transfer_reserve_account = T::TransferReserveAccount::get();
-			T::NativeBalances::transfer(
-				&sender,
-				&transfer_reserve_account,
-				amount,
-				Preservation::Expendable // Allow death
-			)?;
+			ensure!(
+				sender_balance >= amount_in_balance, 
+				Error::<T>::InsufficientBalance
+			);
 
+			// Ensure fee is set
+			let fee = AssetFees::<T>::get(dest_domain_id)
+				.ok_or(Error::<T>::MissingFeeConfig)?;
+
+			let fee_in_balance = fee.saturated_into::<BalanceOf<T>>();
 			let fee_reserve_account = T::FeeReserveAccount::get();
 			T::NativeBalances::transfer(
 				&sender,
 				&fee_reserve_account,
-				fee,
+				fee_in_balance,
+				Preservation::Expendable // Allow death
+			)?;
+
+			Self::deposit_event(Event::FeeCollected {
+				fee_payer: sender.clone(),
+				dest_domain_id,
+				fee_amount: fee,
+			});
+
+			// net_amount_in_balance is amount after fees
+			let net_amount_in_balance = amount_in_balance.saturating_sub(fee_in_balance);
+			let transfer_reserve_account = T::TransferReserveAccount::get();
+			T::NativeBalances::transfer(
+				&sender,
+				&transfer_reserve_account,
+				net_amount_in_balance,
 				Preservation::Expendable // Allow death
 			)?;
 
@@ -304,34 +396,33 @@ pub mod pallet {
 				deposit_nonce.checked_add(1).ok_or(Error::<T>::DepositNonceOverflow)?,
 			);
 
-			Self::deposit_event(Event::FeeCollected {
-				fee_payer: sender.clone(),
-				dest_domain_id,
-				fee_amount: fee,
-			});
+			// net_amount is the amount after all fees were deducted
+			let net_amount = amount
+				.checked_sub(fee)
+				.ok_or(Error::<T>::Underflow)?;
 			
 			Self::deposit_event(Event::Deposit {
-				dest_domain_id, 
+				dest_domain_id,
+				resource_id: T::ResourceId::get(),
 				sender,
-				deposit_nonce, 
-				transfer_type,
-				deposit_data: Self::create_deposit_data(amount_u128, dest_chain_recipient),
+				deposit_nonce,
+				deposit_data: Self::create_deposit_data(net_amount, recipient),
 			});
 			
 			Ok(())
 		}
 
 		/// Mark the give dest domainID with chainID to be disabled
-		#[pallet::call_index(3)]
-		#[pallet::weight(<T as Config >::WeightInfo::execute_proposal(proposals.len() as u32))]
-		pub fn execute_proposal(
+		#[pallet::call_index(5)]
+		#[pallet::weight(<T as Config >::WeightInfo::execute_proposals(proposals.len() as u32))]
+		pub fn execute_proposals(
 			origin: OriginFor<T>,
 			proposals: Vec<Proposal>,
 		) -> DispatchResult {
 			ensure!(
 				<aga_access_segregator::pallet::Pallet<T>>::has_access(
 					<T as Config>::PalletIndex::get(),
-					b"execute_proposal".to_vec(),
+					b"execute_proposals".to_vec(),
 					origin.clone()
 				),
 				Error::<T>::AccessDenied
@@ -379,12 +470,12 @@ pub mod pallet {
 		}
 
 		/// Mark the give dest domainID with chainID to be disabled
-		#[pallet::call_index(4)]
+		#[pallet::call_index(6)]
 		#[pallet::weight(< T as Config >::WeightInfo::set_fee())]
 		pub fn set_fee(
 			origin: OriginFor<T>,
 			domain_id: DomainID,
-			amount: BalanceOf<T>,
+			amount: u128,
 		) -> DispatchResult {
 			ensure!(
 				<aga_access_segregator::pallet::Pallet<T>>::has_access(
@@ -406,13 +497,59 @@ pub mod pallet {
 
 			Ok(())
 		}
+
+		/// Pause all registered bridges
+		#[pallet::call_index(7)]
+		#[pallet::weight(< T as Config >::WeightInfo::pause_all_bridges())]
+		pub fn pause_all_bridges(origin: OriginFor<T>) -> DispatchResult {
+			ensure!(
+				<aga_access_segregator::pallet::Pallet<T>>::has_access(
+					<T as Config>::PalletIndex::get(),
+					b"pause_all_bridges".to_vec(),
+					origin.clone()
+				),
+				Error::<T>::AccessDenied
+			);
+
+			// Pause all bridges
+			Self::pause_all_domains();
+
+			// Emit AllBridgePaused
+			let sender = ensure_signed(origin)?;
+			Self::deposit_event(Event::AllBridgePaused { sender });
+
+			Ok(())
+		}
+
+		/// Unpause all registered bridges
+		#[pallet::call_index(8)]
+		#[pallet::weight(< T as Config >::WeightInfo::unpause_all_bridges())]
+		pub fn unpause_all_bridges(origin: OriginFor<T>) -> DispatchResult {
+			ensure!(
+				<aga_access_segregator::pallet::Pallet<T>>::has_access(
+					<T as Config>::PalletIndex::get(),
+					b"unpause_all_bridges".to_vec(),
+					origin.clone()
+				),
+				Error::<T>::AccessDenied
+			);
+
+			// Unpause all bridges
+			Self::unpause_all_domains();
+
+			// Emit AllBridgeUnpaused
+			let sender = ensure_signed(origin)?;
+			Self::deposit_event(Event::AllBridgeUnpaused { sender });
+
+			Ok(())
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
 		pub fn create_deposit_data(amount: u128, recipient: Vec<u8>) -> Vec<u8> {
 			[
 				&Self::hex_zero_padding_32(amount),
-				&Self::hex_zero_padding_32(recipient.len() as u128),
+				&Self::hex_zero_padding_32(recipient.len() as u128), // ETHEREUM Address length
 				recipient.as_slice(),
 			]
 			.concat()
@@ -452,31 +589,33 @@ pub mod pallet {
 			);
 
 			let (amount, recipient) = Self::extract_deposit_data(&proposal.data)?;
+			
+			// Let total amount to send in balance type
+			let amount_balance = amount.saturated_into::<BalanceOf<T>>();
 
 			let token_reserved_account = T::TransferReserveAccount::get();
 
+			// Decode recipient data into AccountId
+			let recipient_account_id = T::AccountId::decode(&mut &recipient[..])
+				.map_err(|_| Error::<T>::InvalidDepositData)?;
+
 			T::NativeBalances::transfer(
 				&token_reserved_account,
-				&recipient,
-				amount,
+				&recipient_account_id,
+				amount_balance,
 				Preservation::Expendable // Allow death
 			)?;
 
 			Ok(())
 		}
 
-		fn extract_deposit_data(data: &[u8]) -> Result<(BalanceOf<T>, T::AccountId), DispatchError> {
+		fn extract_deposit_data(data: &[u8]) -> Result<(u128, Vec<u8>), DispatchError> {
 			if data.len() < 64 {
 				return Err(Error::<T>::InvalidDepositData.into());
 			}
 		
 			// Extract the amount as u128
-			let amount_u128: u128 = U256::from_big_endian(&data[0..32])
-				.try_into()
-				.map_err(|_| Error::<T>::InvalidDepositData)?;
-		
-			// Convert u128 to BalanceOf<T>
-			let amount: BalanceOf<T> = amount_u128
+			let amount: u128 = U256::from_big_endian(&data[0..32])
 				.try_into()
 				.map_err(|_| Error::<T>::InvalidDepositData)?;
 		
@@ -484,18 +623,27 @@ pub mod pallet {
 			let recipient_len: usize = U256::from_big_endian(&data[32..64])
 				.try_into()
 				.map_err(|_| Error::<T>::InvalidDepositData)?;
-		
-			// Ensure recipient length matches the remaining data
-			if (data.len() - 64) != recipient_len {
+
+			if (data.len() - 64) < recipient_len {
 				return Err(Error::<T>::InvalidDepositData.into());
 			}
-		
-			// Decode recipient data into AccountId
-			let recipient = T::AccountId::decode(&mut &data[64..data.len()])
-			.map_err(|_| Error::<T>::InvalidDepositData)?;
-		
+
+			let recipient = data[64..(64 + recipient_len)].to_vec();
+			
 			// Return the amount and recipient
 			Ok((amount, recipient))
+		}
+
+		/// unpause all registered domains in the storage
+		fn unpause_all_domains() {
+			DestDomainIds::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, false));
+			IsPaused::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, false));
+		}
+
+		/// pause all registered domains in the storage
+		fn pause_all_domains() {
+			DestDomainIds::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, true));
+			IsPaused::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, true));
 		}
 	}
 }

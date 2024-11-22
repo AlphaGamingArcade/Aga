@@ -33,21 +33,51 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use core::marker::PhantomData;
 
 pub trait WeightInfo {
+	fn pause_bridge() -> Weight;
+	fn unpause_bridge() -> Weight;
 	fn register_domain() -> Weight;
 	fn unregister_domain() -> Weight;
 	fn deposit() -> Weight;
-	fn execute_proposal(n: u32) -> Weight;
+	fn execute_proposals(n: u32) -> Weight;
 	fn set_fee() -> Weight;
+	fn pause_all_bridges() -> Weight;
+	fn unpause_all_bridges() -> Weight;
 }
 
 /// Weight functions for `aga_access_segregator`.
 /// Weights for pallet_template using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	/// Storage: SygmaBridge DestDomainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge DestChainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	fn pause_bridge() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_000_000 picoseconds.
+		Weight::from_parts(10_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	fn unpause_bridge() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_000_000 picoseconds.
+		Weight::from_parts(10_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
 	fn register_domain() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
@@ -57,10 +87,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: SygmaBridge DestDomainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge DestChainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
 	fn unregister_domain() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
@@ -71,10 +101,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
 
-	/// Storage: SygmaBridge DestDomainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge DestChainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
 	fn deposit() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
@@ -85,18 +115,18 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
 
-	/// Storage: SygmaBridge MpcAddr (r:1 w:0)
-	/// Proof Skipped: SygmaBridge MpcAddr (max_values: Some(1), max_size: None, mode: Measured)
-	/// Storage: SygmaBridge IsPaused (r:1 w:0)
-	/// Proof Skipped: SygmaBridge IsPaused (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge DestDomainIds (r:1 w:0)
-	/// Proof Skipped: SygmaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge UsedNonces (r:1 w:1)
-	/// Proof Skipped: SygmaBridge UsedNonces (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge MpcAddr (r:1 w:0)
+	/// Proof Skipped: AgaBridge MpcAddr (max_values: Some(1), max_size: None, mode: Measured)
+	/// Storage: AgaBridge IsPaused (r:1 w:0)
+	/// Proof Skipped: AgaBridge IsPaused (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestDomainIds (r:1 w:0)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge UsedNonces (r:1 w:1)
+	/// Proof Skipped: AgaBridge UsedNonces (max_values: None, max_size: None, mode: Measured)
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
 	/// The range of component `n` is `[1, 1000]`.
-	fn execute_proposal(n: u32, ) -> Weight {
+	fn execute_proposals(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `280`
 		//  Estimated: `16593`
@@ -110,11 +140,39 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	}
 
 
-	/// Storage: SygmaBridge DestDomainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
-	/// Storage: SygmaBridge DestChainIds (r:0 w:1)
-	/// Proof Skipped: SygmaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
 	fn set_fee() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_000_000 picoseconds.
+		Weight::from_parts(10_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	fn pause_all_bridges() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 10_000_000 picoseconds.
+		Weight::from_parts(10_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	
+	/// Storage: AgaBridge DestDomainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestDomainIds (max_values: None, max_size: None, mode: Measured)
+	/// Storage: AgaBridge DestChainIds (r:0 w:1)
+	/// Proof Skipped: AgaBridge DestChainIds (max_values: None, max_size: None, mode: Measured)
+	fn unpause_all_bridges() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`

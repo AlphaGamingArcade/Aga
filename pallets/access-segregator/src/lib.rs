@@ -32,6 +32,7 @@ pub mod pallet {
 
 	pub trait WeightInfo {
 		fn grant_access() -> Weight;
+		fn revoke_access() -> Weight;
 	}
 
 	#[pallet::pallet]
@@ -62,6 +63,9 @@ pub mod pallet {
 		/// Extrinsic access grant to someone
 		/// args: [pallet_index, extrinsic_name, who]
 		AccessGranted { pallet_index: u8, extrinsic_name: Vec<u8>, who: T::AccountId },
+		/// Extrinsic access revoke access
+		/// args: [pallet_index, extrinsic_name, who]
+		AccessRevoked { pallet_index: u8, extrinsic_name: Vec<u8>, who: T::AccountId },
 	}
 
 	#[pallet::error]
@@ -71,7 +75,11 @@ pub mod pallet {
 		/// Failed to grant extrinsic access permission to an account
 		GrantAccessFailed,
 		/// Access already exists
-		AlreadyGranted
+		AlreadyGranted,
+		/// Revoking access failed
+		RevokeAccessFailed,
+		//// An Account has no access to the extrinsic
+		AccountNoAccess
 	}
 
 	#[pallet::call]
@@ -104,6 +112,32 @@ pub mod pallet {
 
 			// Emit AccessGranted event
 			Self::deposit_event(Event::AccessGranted { pallet_index, extrinsic_name, who });
+			Ok(())
+		}
+
+		/// Revokes access for an account to an extrinsic.
+		#[pallet::call_index(1)]
+		#[pallet::weight(T::WeightInfo::revoke_access())]
+		pub fn revoke_access(
+			origin: OriginFor<T>,
+			pallet_index: u8,
+			extrinsic_name: Vec<u8>,
+		) -> DispatchResult {
+			// Ensure bridge committee or the account that has permission to revoke access to an extrinsic
+			ensure!(
+				Self::has_access(T::PalletIndex::get(), b"revoke_access".to_vec(), origin),
+				Error::<T>::RevokeAccessFailed
+			);
+
+			// Check if the access exists
+			let existing_who = ExtrinsicAccess::<T>::get((pallet_index, extrinsic_name.clone()))
+				.ok_or(Error::<T>::AccountNoAccess)?;
+
+			// Remove access
+			ExtrinsicAccess::<T>::remove((pallet_index, extrinsic_name.clone()));
+
+			// Emit AccessRevoked event
+			Self::deposit_event(Event::AccessRevoked { pallet_index, extrinsic_name, who: existing_who });
 			Ok(())
 		}
 	}

@@ -112,7 +112,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 104,
+	spec_version: 111,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -336,12 +336,13 @@ parameter_types! {
 		(BridgePalletIndex::get(), b"unregister_domain".to_vec()),
 		(BridgePalletIndex::get(), b"transfer".to_vec()),
 		(BridgePalletIndex::get(), b"set_fee".to_vec()),
-		(BridgePalletIndex::get(), b"execute_proposal".to_vec()),
-		// (BridgePalletIndex::get(), b"pause_bridge".to_vec()),
-		// (BridgePalletIndex::get(), b"unpause_bridge".to_vec()),
+		(BridgePalletIndex::get(), b"deposit".to_vec()),
+		(BridgePalletIndex::get(), b"execute_proposals".to_vec()),
+		(BridgePalletIndex::get(), b"pause_bridge".to_vec()),
+		(BridgePalletIndex::get(), b"unpause_bridge".to_vec()),
+		(BridgePalletIndex::get(), b"pause_all_bridges".to_vec()),
+		(BridgePalletIndex::get(), b"unpause_all_bridges".to_vec()),
 		// (BridgePalletIndex::get(), b"retry".to_vec()),
-		// (BridgePalletIndex::get(), b"pause_all_bridges".to_vec()),
-		// (BridgePalletIndex::get(), b"unpause_all_bridges".to_vec()),
 		// (FeeHandlerRouterPalletIndex::get(), b"set_fee_handler".to_vec()),
 		// (PercentageFeeHandlerRouterPalletIndex::get(), b"set_fee_rate".to_vec()),
 	].to_vec();
@@ -365,6 +366,8 @@ parameter_types! {
 	// AgaBridgePalletId is the palletIDl
 	// this is used as the replacement of handler address in the ProposalExecution event
 	pub const AgaBridgePalletId: PalletId = PalletId(*b"aga/0001");
+	/// Native asset's ResourceId.
+	pub const AgaResourceId: [u8; 32] = [0u8; 32];
 }
 
 // This bridge only support AGA Coin
@@ -376,6 +379,7 @@ impl aga_bridge::Config for Runtime {
 	type FeeReserveAccount = BridgeAccountNativeFee;
 	type PalletId = AgaBridgePalletId;
 	type PalletIndex = BridgePalletIndex;
+	type ResourceId = AgaResourceId;
 	type WeightInfo = aga_bridge::weights::SubstrateWeight<Runtime>;
 }
 

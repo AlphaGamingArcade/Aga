@@ -46,4 +46,16 @@ impl<T: frame_system::Config> super::WeightInfo for SygmaWeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+
+	/// Storage: SygmaAccessSegregator ExtrinsicAccess (r:0 w:1)
+	/// Proof Skipped: SygmaAccessSegregator ExtrinsicAccess (max_values: None, max_size: None, mode: Measured)
+	fn revoke_access() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 9_000_000 picoseconds.
+		Weight::from_parts(9_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
 }
