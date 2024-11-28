@@ -10,6 +10,10 @@ mod benchmarking;
 pub mod weights;
 pub use weights::*;
 
+use aga_traits::{
+	ChainID, DomainID, DepositNonce
+};
+
 #[frame_support::pallet]
 pub mod pallet {
 	// Import various useful types required by all FRAME pallets.
@@ -17,9 +21,6 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use frame_support::traits::fungible::{NativeOrWithId, Inspect, Mutate};
-	use aga_traits::{
-		ChainID, DomainID, DepositNonce
-	};
 	use frame_support::traits::tokens::Preservation;
 	use scale_info::prelude::vec::Vec;
 	use primitive_types::U256;
@@ -645,5 +646,12 @@ pub mod pallet {
 			DestDomainIds::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, true));
 			IsPaused::<T>::iter_keys().for_each(|d| IsPaused::<T>::insert(d, true));
 		}
+	}
+}
+
+sp_api::decl_runtime_apis! {
+	/// This runtime api is for checking if the proposal is executed already
+	pub trait AgaBridgeApi {
+		fn is_proposal_executed(nonce: DepositNonce, domain_id: DomainID) -> bool;
 	}
 }

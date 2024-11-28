@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 mod assets_config;
 mod contract_config;
 
+use aga_traits::{DepositNonce, DomainID};
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -695,7 +696,7 @@ impl_runtime_apis! {
 			Contracts::get_storage(address, key)
 		}
 	}
-
+	
 	impl pallet_asset_conversion::AssetConversionApi<
 		Block,
 		Balance,
@@ -712,6 +713,12 @@ impl_runtime_apis! {
 
 		fn get_reserves(asset1: NativeAndAssetId, asset2: NativeAndAssetId) -> Option<(Balance, Balance)> {
 			AssetConversion::get_reserves(asset1, asset2).ok()
+		}
+	}
+
+	impl aga_bridge::AgaBridgeApi<Block> for Runtime {
+		fn is_proposal_executed(nonce: DepositNonce, domain_id: DomainID) -> bool {
+			AgaBridge::is_proposal_executed(nonce, domain_id)
 		}
 	}
 
