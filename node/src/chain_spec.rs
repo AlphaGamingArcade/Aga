@@ -115,3 +115,9 @@ fn testnet_genesis(
 		},
 	})
 }
+
+
+// LIVE CONFIG
+pub fn aga_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../resources/aga-chain-spec-raw.json")[..])
+}

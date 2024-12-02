@@ -59,8 +59,8 @@ impl_opaque_keys! {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("solochain-template-runtime"),
-	impl_name: create_runtime_str!("solochain-template-runtime"),
+	spec_name: create_runtime_str!("aga-testnet"),
+	impl_name: create_runtime_str!("aga-testnet"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
@@ -180,7 +180,23 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
-// Create the runtime by composing the FRAME pallets that were previously configured.
+// // Create the runtime by composing the FRAME pallets that were previously configured.
+// construct_runtime!(
+// 	pub enum Runtime
+// 	{
+// 		// System support stuff.
+// 		System: frame_system = 0,
+// 		Timestamp: pallet_timestamp = 1,
+// 		Aura: pallet_aura = 2,
+// 		Grandpa: pallet_grandpa = 3;
+// 		Balances: pallet_balances = 4;
+// 		TransactionPayment: pallet_transaction_payment = 5;
+// 		Sudo: pallet_sudo = 6;
+// 		TemplateModule: pallet_template = 7;
+// 		Assets: pallet_assets::<Instance1> = 8;
+// 	}
+// );
+
 #[frame_support::runtime]
 mod runtime {
 	#[runtime::runtime]
@@ -221,4 +237,22 @@ mod runtime {
 	// Include the custom logic from the pallet-template in the runtime.
 	#[runtime::pallet_index(7)]
 	pub type TemplateModule = pallet_template;
+	
+	#[runtime::pallet_index(8)]
+	pub type Assets = pallet_assets<Instance1>;
+
+	#[runtime::pallet_index(9)]
+	pub type PoolAssets = pallet_assets<Instance2>;
+
+	#[runtime::pallet_index(10)]
+	pub type AssetConversion = pallet_asset_conversion;
+
+	#[runtime::pallet_index(11)]
+	pub type Authorship = pallet_authorship;
+
+	#[runtime::pallet_index(12)]
+	pub type AgaAccessSegregator = aga_access_segregator;
+
+	#[runtime::pallet_index(13)]
+	pub type AgaBridge = aga_bridge;
 }

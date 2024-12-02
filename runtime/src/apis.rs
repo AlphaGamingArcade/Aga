@@ -27,7 +27,7 @@
 use alloc::{vec, vec::Vec};
 use frame_support::{
 	genesis_builder_helper::{build_state, get_preset},
-	weights::Weight,
+	weights::Weight
 };
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_api::impl_runtime_apis;
@@ -39,6 +39,8 @@ use sp_runtime::{
 	ApplyExtrinsicResult,
 };
 use sp_version::RuntimeVersion;
+use crate::AssetConversion;
+use crate::configs::NativeOrWithIdOf;
 
 // Local module imports
 use super::{
@@ -214,6 +216,44 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl pallet_asset_conversion::AssetConversionApi<Block, Balance, NativeOrWithIdOf> for Runtime {
+		fn quote_price_exact_tokens_for_tokens(
+			asset1: NativeOrWithIdOf,
+			asset2: NativeOrWithIdOf,
+			amount: Balance,
+			include_fee: bool,
+		) -> Option<Balance> {
+			AssetConversion::quote_price_exact_tokens_for_tokens(
+				asset1,
+				asset2,
+				amount,
+				include_fee,
+			)
+		}
+
+		fn quote_price_tokens_for_exact_tokens(
+			asset1: NativeOrWithIdOf,
+			asset2: NativeOrWithIdOf,
+			amount: Balance,
+			include_fee: bool,
+		) -> Option<Balance> {
+			AssetConversion::quote_price_tokens_for_exact_tokens(
+				asset1,
+				asset2,
+				amount,
+				include_fee,
+			)
+		}
+
+		fn get_reserves(
+			asset1: NativeOrWithIdOf,
+			asset2: NativeOrWithIdOf,
+		) -> Option<(Balance, Balance)> {
+			AssetConversion::get_reserves(asset1, asset2).ok()
+		}
+	}
+
+	
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn benchmark_metadata(extra: bool) -> (

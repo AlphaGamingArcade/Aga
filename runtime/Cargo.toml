@@ -49,6 +49,14 @@ pallet-transaction-payment-rpc-runtime-api.workspace = true
 frame-benchmarking = { optional = true, workspace = true }
 frame-system-benchmarking = { optional = true, workspace = true }
 pallet-template.workspace = true
+pallet-assets.workspace = true
+pallet-asset-conversion.workspace = true
+pallet-authorship.workspace = true
+aga-access-segregator.workspace = true
+aga-bridge.workspace = true
+sp-staking.workspace = true
+pallet-session.workspace = true
+sp-std.workspace = true
 
 [build-dependencies]
 substrate-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -68,7 +76,10 @@ std = [
 
 	"frame-benchmarking?/std",
 	"frame-try-runtime?/std",
-
+	
+	"pallet-authorship/std",
+	"pallet-asset-conversion/std",
+	"pallet-assets/std",
 	"pallet-aura/std",
 	"pallet-balances/std",
 	"pallet-grandpa/std",
@@ -77,6 +88,12 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
+	
+	"aga-access-segregator/std",
+	"aga-bridge/std",
+	"sp-staking/std",
+	"pallet-session/std",
+	"sp-std/std",
 
 	"sp-api/std",
 	"sp-block-builder/std",
