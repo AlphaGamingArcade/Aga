@@ -33,7 +33,7 @@ sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "po
 ]}
 # For bridges
 aga-access-segregator = { path = "../access-segregator", default-features = false }
-aga-traits = { path = "../../traits", default-features = false }
+aga-primitives = { path = "../../primitives/aga", default-features = false }
 
 [dev-dependencies]
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0" }
@@ -61,7 +61,7 @@ std = [
 	"sp-std/std",
 	"primitive-types/std",
 	"aga-access-segregator/std",
-	"aga-traits/std",
+	"aga-primitives/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

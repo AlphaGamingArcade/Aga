@@ -1,5 +1,5 @@
 [package]
-name = "node-template-runtime"
+name = "aga-runtime"
 description = "A solochain runtime template built with Substrate, part of Polkadot Sdk."
 version = "0.0.0"
 license = "MIT-0"
@@ -91,7 +91,7 @@ pallet-template = { path = "../pallets/template", default-features = false }
 aga-access-segregator = { path = "../pallets/access-segregator", default-features = false }
 aga-bridge = { path = "../pallets/bridge", default-features = false}
 pallet-treasury = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
-aga-traits = { path = "../traits", default-features = false }
+aga-primitives = { path = "../primitives/aga", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", optional = true }
@@ -129,6 +129,7 @@ std = [
 
 	"aga-access-segregator/std",
 	"aga-bridge/std",
+	"aga-primitives/std",
 
 	"sp-api/std",
 	"sp-block-builder/std",

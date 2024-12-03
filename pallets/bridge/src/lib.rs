@@ -10,7 +10,7 @@ mod benchmarking;
 pub mod weights;
 pub use weights::*;
 
-use aga_traits::{
+use aga_primitives::{
 	ChainID, DomainID, DepositNonce
 };
 

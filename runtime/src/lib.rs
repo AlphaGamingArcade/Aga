@@ -6,7 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 mod assets_config;
 mod contract_config;
 
-use aga_traits::{DepositNonce, DomainID};
+use aga_primitives::{DepositNonce, DomainID};
 use pallet_grandpa::AuthorityId as GrandpaId;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -26,7 +26,11 @@ use sp_version::RuntimeVersion;
 
 use frame_support::{
 	dispatch::DispatchClass,
-	traits::tokens::fungible::NativeOrWithId,
+	traits::{
+		OnUnbalanced,
+		Currency,
+		tokens::fungible::NativeOrWithId
+	},
 	genesis_builder_helper::{build_config, create_default_config},
 };
 use frame_system::limits::{BlockLength, BlockWeights};
@@ -75,7 +79,7 @@ pub type Nonce = u32;
 pub type Hash = sp_core::H256;
 
 // This includes the native and assets type
-pub type NativeAndAssetId = NativeOrWithId<u32>;
+pub type NativeOrWithIdOf = NativeOrWithId<u32>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -105,15 +109,15 @@ pub mod opaque {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("aga"),
-	impl_name: create_runtime_str!("aga"),
+	spec_name: create_runtime_str!("aga-testnet"),
+	impl_name: create_runtime_str!("aga-testnet"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 112,
+	spec_version: 100,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -254,8 +258,19 @@ impl pallet_grandpa::Config for Runtime {
 	type EquivocationReportSystem = ();
 }
 
+pub struct AuraAccountAdapter;
+impl frame_support::traits::FindAuthor<AccountId> for AuraAccountAdapter {
+    fn find_author<'a, I>(digests: I) -> Option<AccountId>
+        where I: 'a + IntoIterator<Item=(frame_support::ConsensusEngineId, &'a [u8])>
+    {
+        pallet_aura::AuraAuthorId::<Runtime>::find_author(digests).and_then(|k| {
+            AccountId::try_from(k.as_ref()).ok()
+        })
+    }
+}
+
 impl pallet_authorship::Config for Runtime {
-	type FindAuthor = ();
+	type FindAuthor = AuraAccountAdapter;
 	type EventHandler = ();
 }
 
@@ -290,13 +305,29 @@ impl pallet_balances::Config for Runtime {
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 }
 
+/// Logic for the author to get a portion of fees.
+pub type NegativeImbalance<T> = <pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId,>>::NegativeImbalance;
+pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
+impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAuthor<R>
+where
+	R: pallet_balances::Config + pallet_authorship::Config,
+	<R as frame_system::Config>::AccountId: From<AccountId>,
+	<R as frame_system::Config>::AccountId: Into<AccountId>,
+{
+	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
+		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
+			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		}
+	}
+}
+
 parameter_types! {
 	pub FeeMultiplier: Multiplier = Multiplier::one();
 }
 
 impl pallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
 	type OperationalFeeMultiplier = ConstU8<5>;
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = IdentityFee<Balance>;
@@ -700,18 +731,18 @@ impl_runtime_apis! {
 	impl pallet_asset_conversion::AssetConversionApi<
 		Block,
 		Balance,
-		NativeAndAssetId,
+		NativeOrWithIdOf,
 	> for Runtime
 	{
-		fn quote_price_exact_tokens_for_tokens(asset1: NativeAndAssetId, asset2: NativeAndAssetId, amount: Balance, include_fee: bool) -> Option<Balance> {
+		fn quote_price_exact_tokens_for_tokens(asset1: NativeOrWithIdOf, asset2: NativeOrWithIdOf, amount: Balance, include_fee: bool) -> Option<Balance> {
 			AssetConversion::quote_price_exact_tokens_for_tokens(asset1, asset2, amount, include_fee)
 		}
 
-		fn quote_price_tokens_for_exact_tokens(asset1: NativeAndAssetId, asset2: NativeAndAssetId, amount: Balance, include_fee: bool) -> Option<Balance> {
+		fn quote_price_tokens_for_exact_tokens(asset1: NativeOrWithIdOf, asset2: NativeOrWithIdOf, amount: Balance, include_fee: bool) -> Option<Balance> {
 			AssetConversion::quote_price_tokens_for_exact_tokens(asset1, asset2, amount, include_fee)
 		}
 
-		fn get_reserves(asset1: NativeAndAssetId, asset2: NativeAndAssetId) -> Option<(Balance, Balance)> {
+		fn get_reserves(asset1: NativeOrWithIdOf, asset2: NativeOrWithIdOf) -> Option<(Balance, Balance)> {
 			AssetConversion::get_reserves(asset1, asset2).ok()
 		}
 	}

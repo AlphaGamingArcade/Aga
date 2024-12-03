@@ -1,4 +1,4 @@
-use crate::{AccountId, Balance, Balances, Runtime, RuntimeEvent, PoolAssets, Assets, NativeAndAssetId};
+use crate::{AccountId, Balance, Balances, Runtime, RuntimeEvent, PoolAssets, Assets, NativeOrWithIdOf};
 use frame_support::{
 	parameter_types, ord_parameter_types,
 	traits::{
@@ -15,8 +15,12 @@ use frame_system::{EnsureRoot, EnsureSigned, EnsureSignedBy};
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
 pub const DOLLARS: Balance = 100 * CENTS;
-use sp_runtime::Permill;
-use sp_runtime::traits::AccountIdConversion;
+use sp_runtime::{
+	traits::AccountIdConversion, 
+	Permill
+};
+
+use pallet_asset_conversion::WithFirstAsset;
 
 /// We allow root to execute privileged asset operations.
 pub type AssetsForceOrigin = EnsureRoot<AccountId>;
@@ -54,7 +58,7 @@ impl pallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
-	pub const Native: NativeAndAssetId = NativeOrWithId::Native;
+	pub const Native: NativeOrWithIdOf = NativeOrWithId::Native;
 	pub storage LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -89,18 +93,16 @@ impl pallet_assets::Config<PoolAssetsInstance> for Runtime {
 	type BenchmarkHelper = ();
 }
 
-pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeAndAssetId, AccountId>;
-pub type AscendingLocator = pallet_asset_conversion::Ascending<AccountId, NativeAndAssetId>;
-pub type WithFirstAssetLocator = pallet_asset_conversion::WithFirstAsset<Native, AccountId, NativeAndAssetId>;
+pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeOrWithIdOf, AccountId>;
 
 impl pallet_asset_conversion::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = <Self as pallet_balances::Config>::Balance;
 	type HigherPrecisionBalance = u128;
-	type AssetKind = NativeAndAssetId;
+	type AssetKind = NativeOrWithIdOf;
 	type Assets = NativeAndAssets;
 	type PoolId = (Self::AssetKind, Self::AssetKind);
-	type PoolLocator = pallet_asset_conversion::Chain<WithFirstAssetLocator, AscendingLocator>;
+	type PoolLocator = WithFirstAsset<Native, AccountId, Self::AssetKind>;
 	type PoolAssetId = u32;
 	type PoolAssets = PoolAssets;
 	type PoolSetupFee = ConstU128<100>; // should be more or equal to the existential deposit
