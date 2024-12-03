@@ -49,6 +49,9 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk
 pallet-asset-conversion = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
 pallet-asset-conversion-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
 
+# Validator management
+sp-staking = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
+
 # primitives
 hex-literal = { version = "0.4.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
