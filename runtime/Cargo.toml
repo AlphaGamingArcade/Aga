@@ -48,9 +48,13 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk
 # asset conversion
 pallet-asset-conversion = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
 pallet-asset-conversion-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
+pallet-asset-rate = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
 
 # Validator management
 sp-staking = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.9.0", default-features = false }
+pallet-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false, features = ['historical']  }
+pallet-node-authorization = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false}
+pallet-validator-set = {  package = "substrate-validator-set", version = "1.1.0", git = "https://github.com/gautamdhameja/substrate-validator-set", tag = "polkadot-v1.9.0", default-features = false }
 
 # primitives
 hex-literal = { version = "0.4.1", default-features = false }
@@ -70,7 +74,7 @@ sp-offchain = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "p
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false, features = [
 	"serde",
 ] }
-sp-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
+sp-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false}
 sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 sp-storage = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 sp-transaction-pool = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
@@ -95,6 +99,8 @@ aga-access-segregator = { path = "../pallets/access-segregator", default-feature
 aga-bridge = { path = "../pallets/bridge", default-features = false}
 pallet-treasury = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", default-features = false }
 aga-primitives = { path = "../primitives/aga", default-features = false }
+
+log = "0.4"
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.9.0", optional = true }
@@ -124,11 +130,15 @@ std = [
 	"pallet-transaction-payment/std",
 	"pallet-asset-conversion/std",
 	"pallet-asset-conversion-tx-payment/std",
+	"pallet-asset-rate/std",
 
 	"pallet-assets/std",
 	"pallet-authorship/std",
 	"pallet-contracts/std",
 	"pallet-utility/std",
+	"pallet-session/std",
+	"pallet-node-authorization/std",
+	"pallet-validator-set/std",
 
 	"aga-access-segregator/std",
 	"aga-bridge/std",

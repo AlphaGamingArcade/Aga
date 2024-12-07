@@ -13,7 +13,7 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify},
+	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify, OpaqueKeys},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
 };
@@ -33,7 +33,10 @@ use frame_support::{
 	},
 	genesis_builder_helper::{build_config, create_default_config},
 };
-use frame_system::limits::{BlockLength, BlockWeights};
+use frame_system::{
+	EnsureRoot,
+	limits::{BlockLength, BlockWeights}
+};
 pub use frame_support::{
 	construct_runtime, derive_impl, parameter_types,
 	traits::{
@@ -41,6 +44,7 @@ pub use frame_support::{
 		StorageInfo,
 	},
 	weights::{
+		ConstantMultiplier,
 		constants::{
 			BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
 		},
@@ -109,15 +113,15 @@ pub mod opaque {
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("aga-testnet"),
-	impl_name: create_runtime_str!("aga-testnet"),
+	spec_name: create_runtime_str!("aga"),
+	impl_name: create_runtime_str!("aga"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 100,
+	spec_version: 103,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -263,7 +267,11 @@ impl frame_support::traits::FindAuthor<AccountId> for AuraAccountAdapter {
     fn find_author<'a, I>(digests: I) -> Option<AccountId>
         where I: 'a + IntoIterator<Item=(frame_support::ConsensusEngineId, &'a [u8])>
     {
-        pallet_aura::AuraAuthorId::<Runtime>::find_author(digests).and_then(|k| {
+		// for (id, data) in digests {
+		// 	log::info!("Digest: {:?}, Data: {:?}", id, data);
+		// }
+
+		pallet_aura::AuraAuthorId::<Runtime>::find_author(digests).and_then(|k| {
             AccountId::try_from(k.as_ref()).ok()
         })
     }
@@ -316,13 +324,20 @@ where
 {
 	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
 		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
+			log::info!("Fee credited to block author: {:?}", author);
 			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
+		} else {
+			log::warn!("No block author found!");
 		}
 	}
 }
 
 parameter_types! {
+	// pub const TransactionByteFee: Balance = 5 * MILLICENTS;
 	pub FeeMultiplier: Multiplier = Multiplier::one();
+	/// This value increases the priority of `Operational` transactions by adding
+	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
+	pub const OperationalFeeMultiplier: u8 = 5;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -333,6 +348,15 @@ impl pallet_transaction_payment::Config for Runtime {
 	type LengthToFee = IdentityFee<Balance>;
 	type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
+
+// impl pallet_transaction_payment::Config for Runtime {
+// 	type RuntimeEvent = RuntimeEvent;
+// 	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
+// 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
+// 	type WeightToFee = IdentityFee<Balance>;
+// 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+// 	type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+// }
 
 impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -415,25 +439,92 @@ impl aga_bridge::Config for Runtime {
 	type WeightInfo = aga_bridge::weights::SubstrateWeight<Runtime>;
 }
 
+
+impl pallet_asset_rate::Config for Runtime {
+	type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type CreateOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type UpdateOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type AssetKind = u32;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
+}
+
+parameter_types! {
+	pub const MaxWellKnownNodes: u32 = 8;
+	pub const MaxPeerIdLength: u32 = 128;
+}
+
+impl pallet_node_authorization::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxWellKnownNodes = MaxWellKnownNodes;
+	type MaxPeerIdLength = MaxPeerIdLength;
+	type AddOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type SwapOrigin = EnsureRoot<AccountId>;
+	type ResetOrigin = EnsureRoot<AccountId>;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const MinAuthorities: u32 = 2;
+}
+
+impl pallet_validator_set::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type AddRemoveOrigin = EnsureRoot<AccountId>;
+	type MinAuthorities = MinAuthorities;
+	type WeightInfo = pallet_validator_set::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const Period: u32 = 2 * MINUTES;
+	pub const Offset: u32 = 0;
+}
+
+impl pallet_session::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type ValidatorId = <Self as frame_system::Config>::AccountId;
+	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
+	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+	type SessionManager = ValidatorSet;
+	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_session::historical::Config for Runtime {
+	type FullIdentification = Self::ValidatorId;
+	type FullIdentificationOf = Self::ValidatorIdOf;
+}
+
 construct_runtime!(
 	pub enum Runtime {
 		System: frame_system = 0,
 		Timestamp: pallet_timestamp = 1,
-		Aura: pallet_aura = 2,
-		Grandpa: pallet_grandpa = 3,
-		Balances: pallet_balances = 4,
-		TransactionPayment: pallet_transaction_payment = 5,
-		Sudo: pallet_sudo = 6,
-		TemplateModule: pallet_template = 7,
-		Assets: pallet_assets::<Instance1> = 8,
-		PoolAssets: pallet_assets::<Instance2> = 9,
-		AssetConversion: pallet_asset_conversion = 10,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 11,
-		Utility: pallet_utility = 12,
-		Authorship: pallet_authorship = 13,
-		Contracts: pallet_contracts = 14,
-		AgaAccessSegregator: aga_access_segregator = 15,
-		AgaBridge: aga_bridge = 16
+		Balances: pallet_balances = 2,
+		ValidatorSet: pallet_validator_set = 3,
+		Session: pallet_session = 4,
+		Aura: pallet_aura = 5,
+		Historical: pallet_session::historical = 6,
+		Grandpa: pallet_grandpa = 7,
+		TransactionPayment: pallet_transaction_payment = 8,
+		Sudo: pallet_sudo = 9,
+		TemplateModule: pallet_template = 10,
+		Assets: pallet_assets::<Instance1> = 11,
+		PoolAssets: pallet_assets::<Instance2> = 12,
+		AssetConversion: pallet_asset_conversion = 13,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 14,
+		Utility: pallet_utility = 15,
+		Authorship: pallet_authorship = 16,
+		Contracts: pallet_contracts = 17,
+		AgaAccessSegregator: aga_access_segregator = 18,
+		AgaBridge: aga_bridge = 19,
+		AssetRate: pallet_asset_rate = 20,
+		NodeAuthorization: pallet_node_authorization = 21
 	}
 );
 

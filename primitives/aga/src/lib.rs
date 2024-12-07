@@ -30,3 +30,6 @@ pub trait DecimalConverter {
 	fn convert_to(amount: u128, decimal: u8) -> u128;
 	fn convert_from(amount: u128, decimal: u8) -> u128;
 }
+
+/// Simple index type with which we can count sessions.
+pub type SessionIndex = u32;

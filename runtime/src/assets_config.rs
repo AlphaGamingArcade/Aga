@@ -97,7 +97,7 @@ pub type NativeAndAssets = UnionOf<Balances, Assets, NativeFromLeft, NativeOrWit
 
 impl pallet_asset_conversion::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Balance = <Self as pallet_balances::Config>::Balance;
+	type Balance = Balance;
 	type HigherPrecisionBalance = u128;
 	type AssetKind = NativeOrWithIdOf;
 	type Assets = NativeAndAssets;
@@ -109,7 +109,7 @@ impl pallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = Native;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type PalletId = AssetConversionPalletId;
-	type WeightInfo = ();
+	type WeightInfo = pallet_asset_conversion::weights::SubstrateWeight<Runtime>;
 	type LPFee = ConstU32<3>; // means 0.3%
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
 	type MaxSwapPathLength = ConstU32<4>;

@@ -1,4 +1,4 @@
-use aga_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY};
+use aga_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY, opaque::SessionKeys};
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -33,8 +33,19 @@ where
 }
 
 /// Generate an Aura authority key.
-pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
-	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+// pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
+// 	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
+// }
+fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
+	SessionKeys { aura, grandpa }
+}
+
+pub fn authority_keys_from_seed(s: &str) -> (AccountId, AuraId, GrandpaId) {
+	(
+		get_account_id_from_seed::<sr25519::Public>(s),
+		get_from_seed::<AuraId>(s),
+		get_from_seed::<GrandpaId>(s)
+	)
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -97,7 +108,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
@@ -107,15 +118,23 @@ fn testnet_genesis(
 			// Configure endowed accounts with initial balance of 1 << 60.
 			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
 		},
+		"validatorSet": {
+			"initialValidators": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+		},
+		"session": {
+			"keys": initial_authorities.iter().map(|x| {
+				(x.0.clone(), x.0.clone(), session_keys(x.1.clone(), x.2.clone()))
+			}).collect::<Vec<_>>(),
+		},
 		"aura": {
-			"authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+			"authorities": [],
 		},
 		"grandpa": {
-			"authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),
+			"authorities": [],
 		},
 		"sudo": {
 			// Assign network admin rights.
 			"key": Some(root_key),
-		},
+		}
 	})
 }
