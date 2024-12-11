@@ -14,7 +14,7 @@
 
 - **AGA: Seamless Asset Transfers Across Games**
 
-  At the core of our blockchain lies **AGA**, a revolutionary system designed to enable seamless asset transfers between different games. Whether you’re moving items, characters, or currencies, AGA ensures a secure and frictionless experience for players and developers alike.
+  At the core of our blockchain lies **AGA**, a revolutionary system designed to enable seamless asset transfers between different games. AGA ensures a secure and frictionless experience for players and developers alike.
 
 - **Game Asset Portability**
 
