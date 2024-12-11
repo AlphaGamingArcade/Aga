@@ -36,7 +36,7 @@
 
 ### Testnet (Pioneer Phase)
 
-Experience the capabilities of AGA through our Pioneer Testnet. Test asset transfers, explore cross-game compatibility, and provide valuable feedback to shape the future of the platform. Join the community of developers and players pioneering this new era of gaming interoperability.
+Experience the capabilities of AGA through our Aga Testnet. Test asset transfers, explore cross-game compatibility, and provide valuable feedback to shape the future of the platform. Join the community of developers and players pioneering this new era of gaming interoperability.
 
 ### Mainnet
 
