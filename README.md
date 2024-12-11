@@ -2,7 +2,7 @@
 
 ![logo](docs/logo.svg)
 
-# [Allfeat](https://allfeat.com)
+# [AGA](https://aga.network)
 
 [![Twitter URL](https://img.shields.io/twitter/follow/Allfeat_music?style=social)](https://twitter.com/Allfeat_music) [![Telegram](https://img.shields.io/endpoint?color=neon&style=flat-square&url=https%3A%2F%2Ftg.sumanjay.workers.dev%2FAllfeat_music)](https://t.me/Allfeat_fndn) [![Discord](https://img.shields.io/badge/Discord-gray?logo=discord)](https://allfeat.discord.com)
 [![GitHub code lines](https://tokei.rs/b1/github/allfeat/allfeat)](https://github.com/allfeat/allfeat) [![GitHub last commit](https://img.shields.io/github/last-commit/allfeat/allfeat?color=red&style=plastic)](https://github.com/allfeat/allfeat) [![CI](https://github.com/allfeat/allfeat/actions/workflows/checks.yml/badge.svg)](https://github.com/allfeat/allfeat/actions/workflows/checks.yml/badge.svg)
