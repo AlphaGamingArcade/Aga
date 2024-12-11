@@ -12,31 +12,35 @@
 
 ## Introduction
 
-- **MIDDS: Metadata Integrity, Certification, and Monetization**
+- **AGA: Seamless Asset Transfers Across Games**
 
-  At the heart of Allfeat lies **MIDDS** (Metadata Integrity and Data Decentralization System), a groundbreaking approach to the certification, securitization, and monetization of music metadata. With MIDDS, artists and creators can confidently certify their metadata on-chain, ensuring its integrity while monetizing their content directly.
+  At the core of our blockchain lies **AGA**, a revolutionary system designed to enable seamless asset transfers between different games. Whether you’re moving items, characters, or currencies, AGA ensures a secure and frictionless experience for players and developers alike.
 
-- **Proof Of Metadata**
+- **Game Asset Portability**
 
-  Allfeat leverages a highly secure blockchain infrastructure to offer decentralized storage and verification of music metadata through his own consensus, which ensures that the data is protected, immutable, and auditable. By using MIDDS, Allfeat enables artists to secure their creations and protect their intellectual property.
+  AGA utilizes cutting-edge blockchain technology to facilitate decentralized storage and verification of game assets. By implementing a robust Proof of Authority (PoA) consensus mechanism and leveraging a cross-chain bridge, AGA ensures that assets remain secure, immutable, and auditable, empowering players to truly own their digital possessions.
 
-- **Monetization and Certification Platform**
+- **Interoperability and Integration**
 
-  Through MIDDS, creators can certify their metadata in a transparent way that integrates monetization opportunities, opening new revenue streams. Fans, collaborators, and partners can easily verify the authenticity of metadata, enabling a more trustworthy music ecosystem.
+  Built with a focus on flexibility, AGA offers compatibility with EVM-compatible chains and other ecosystems. This cross-chain functionality, powered by the cross-chain bridge, allows game developers to integrate their titles effortlessly, while players can enjoy a unified experience across multiple games.
 
-- **Cross-Chain Compatibility and Integration**
+- **Player-Centric Economy**
 
-  Built with modern frameworks, Allfeat integrates seamlessly with EVM-compatible chains and other ecosystems to provide cross-chain functionalities. This ensures that certified metadata and Assets as NFTs can interact across various blockchain networks, enhancing discoverability and collaboration.
+  AGA opens the door to new economic opportunities by enabling a player-driven marketplace for in-game assets. Players can trade, sell, and purchase assets transparently, while developers benefit from increased engagement and monetization avenues.
+
+- **Developer-Friendly Framework**
+
+  AGA provides an intuitive platform with tools and SDKs designed for game developers to easily onboard and integrate asset transfer functionalities. The streamlined process reduces development overhead and fosters innovation within the gaming industry.
 
 ## Release
 
-### Testnet (Harmonie)
+### Testnet (Pioneer Phase)
 
-Test and experience the features of the Allfeat network, including MIDDS registration, NFT deployment, and cross-chain functionalities. Developers can participate in the gamified testnet and provide feedback.
+Experience the capabilities of AGA through our Pioneer Testnet. Test asset transfers, explore cross-game compatibility, and provide valuable feedback to shape the future of the platform. Join the community of developers and players pioneering this new era of gaming interoperability.
 
 ### Mainnet
 
-Coming soon. Stay tuned for updates.
+The Mainnet launch is on the horizon. Stay connected for updates and announcements as we bring AGA to life and redefine the gaming experience.
 
 ### Tags and Runtime Versions
 
@@ -44,36 +48,14 @@ Each release tag includes the different versions of the runtimes corresponding t
 
 ## Documentation
 
-- [Allfeat Docs](https://docs.allfeat.com)
-- [MIDDS Overview](https://docs.allfeat.com/features/midds/)
+- [Allfeat Docs](https://docs.aga.com)
+- 
+## Quick Setup
 
-## Quick Node Bootstrap
 
-You can easily bootstrap your own Allfeat node either with Docker or by building it from source using Rust. Below are the instructions for Docker:
-
-### Using Docker
-
-1. Pull the Allfeat node Docker image:
-
-```bash
-docker pull allfeatnetwork/allfeat:master
-```
-
-2. Run the Allfeat node Docker container:
-
-```bash
-docker run docker.io/allfeatnetwork/allfeat:master
-```
-
-It will start syncing the blockchain with the Harmonie Live Testnet.
-You can also choose to start a Development Node in local by using `--dev` argument.
-
-```bash
-docker run docker.io/allfeatnetwork/allfeat:master --dev
-```
 
 ## Contribution
 
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Allfeat is open-source under the GPLv3 license. We welcome community contributions. Please review [CONTRIBUTIONS.md](doc/CONTRIBUTIONS.md) for details on how to contribute to the project.
+AGA is open-source under the GPLv3 license. We welcome community contributions. Please review [CONTRIBUTIONS.md](doc/CONTRIBUTIONS.md) for details on how to contribute to the project.
