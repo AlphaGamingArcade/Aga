@@ -1,6 +1,6 @@
 <div align="center">
 
-![logo](docs/aga-banner.png)
+![logo](docs/aga-banner-2.png)
 
 # [AGA](https://aga.network)
 
