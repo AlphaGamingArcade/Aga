@@ -3,8 +3,10 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-mod assets_config;
-mod contract_config;
+// pub mod apis;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
+pub mod configs;
 
 use aga_primitives::{DepositNonce, DomainID};
 use pallet_grandpa::AuthorityId as GrandpaId;
@@ -13,38 +15,28 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
-	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify, OpaqueKeys},
+	traits::{OpaqueKeys, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
 };
 use sp_std::prelude::*;
-use sp_runtime::traits::AccountIdConversion;
-use frame_support::PalletId;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
-use frame_support::{
+use frame_system::limits::{BlockLength, BlockWeights};
+pub use frame_support::{
 	dispatch::DispatchClass,
+	genesis_builder_helper::{build_config, create_default_config},
+	construct_runtime, derive_impl, parameter_types,
 	traits::{
 		OnUnbalanced,
 		Currency,
-		tokens::fungible::NativeOrWithId
-	},
-	genesis_builder_helper::{build_config, create_default_config},
-};
-use frame_system::{
-	EnsureRoot,
-	limits::{BlockLength, BlockWeights}
-};
-pub use frame_support::{
-	construct_runtime, derive_impl, parameter_types,
-	traits::{
+		tokens::fungible::NativeOrWithId,
 		ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness,
 		StorageInfo,
 	},
 	weights::{
-		ConstantMultiplier,
 		constants::{
 			BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
 		},
@@ -59,9 +51,6 @@ use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
-
-/// Import the template pallet.
-pub use pallet_template;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -109,19 +98,25 @@ pub mod opaque {
 	}
 }
 
+pub const DOLLARS: Balance = 100 * CENTS;
+pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
+pub const MILLICENTS: Balance = 1_000_000_000;
+
+pub const EXISTENTIAL_DEPOSIT: Balance = MILLICENTS;
+
 // To learn more about runtime versioning, see:
 // https://docs.substrate.io/main-docs/build/upgrade#runtime-versioning
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("aga"),
-	impl_name: create_runtime_str!("aga"),
+	spec_name: create_runtime_str!("aga-testnet"),
+	impl_name: create_runtime_str!("aga-testnet"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 103,
+	spec_version: 100,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -161,17 +156,6 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 const MAXIMUM_BLOCK_WEIGHT: Weight =
 	Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2), u64::MAX);
 
-// Prints debug output of the `contracts` pallet to stdout if the node is
-// started with `-lruntime::contracts=debug`.
-const CONTRACTS_DEBUG_OUTPUT: pallet_contracts::DebugInfo =
-	pallet_contracts::DebugInfo::UnsafeDebug;
-const CONTRACTS_EVENTS: pallet_contracts::CollectEvents =
-	pallet_contracts::CollectEvents::UnsafeCollect;
-
-// Unit = the base number of indivisible units for balances
-const MILLIUNIT: Balance = 1_000_000_000;
-pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
-
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 parameter_types! {
@@ -206,301 +190,6 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 }
 
-/// The default types are being injected by [`derive_impl`](`frame_support::derive_impl`) from
-/// [`SoloChainDefaultConfig`](`struct@frame_system::config_preludes::SolochainDefaultConfig`),
-/// but overridden as needed.
-#[derive_impl(frame_system::config_preludes::SolochainDefaultConfig as frame_system::DefaultConfig)]
-impl frame_system::Config for Runtime {
-	/// The block type for the runtime.
-	type Block = Block;
-	/// Block & extrinsics weights: base values and limits.
-	type BlockWeights = RuntimeBlockWeights;
-	/// The maximum length of a block (in bytes).
-	type BlockLength = RuntimeBlockLength;
-	/// The identifier used to distinguish between accounts.
-	type AccountId = AccountId;
-	/// The type for storing how many extrinsics an account has signed.
-	type Nonce = Nonce;
-	/// The type for hashing blocks and tries.
-	type Hash = Hash;
-	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-	type BlockHashCount = BlockHashCount;
-	/// The weight of database operations that the runtime can invoke.
-	type DbWeight = RocksDbWeight;
-	/// Version of the runtime.
-	type Version = Version;
-	/// The data to be stored in an account.
-	type AccountData = pallet_balances::AccountData<Balance>;
-	/// This is used as an identifier of the chain. 42 is the generic substrate prefix.
-	type SS58Prefix = SS58Prefix;
-	type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-parameter_types! {
-	pub const UncleGenerations: u32 = 0;
-}
-
-impl pallet_aura::Config for Runtime {
-	type AuthorityId = AuraId;
-	type DisabledValidators = ();
-	type MaxAuthorities = ConstU32<32>;
-	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-
-	#[cfg(feature = "experimental")]
-	type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
-}
-
-impl pallet_grandpa::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-
-	type WeightInfo = ();
-	type MaxAuthorities = ConstU32<32>;
-	type MaxNominators = ConstU32<0>;
-	type MaxSetIdSessionEntries = ConstU64<0>;
-
-	type KeyOwnerProof = sp_core::Void;
-	type EquivocationReportSystem = ();
-}
-
-pub struct AuraAccountAdapter;
-impl frame_support::traits::FindAuthor<AccountId> for AuraAccountAdapter {
-    fn find_author<'a, I>(digests: I) -> Option<AccountId>
-        where I: 'a + IntoIterator<Item=(frame_support::ConsensusEngineId, &'a [u8])>
-    {
-		// for (id, data) in digests {
-		// 	log::info!("Digest: {:?}, Data: {:?}", id, data);
-		// }
-
-		pallet_aura::AuraAuthorId::<Runtime>::find_author(digests).and_then(|k| {
-            AccountId::try_from(k.as_ref()).ok()
-        })
-    }
-}
-
-impl pallet_authorship::Config for Runtime {
-	type FindAuthor = AuraAccountAdapter;
-	type EventHandler = ();
-}
-
-impl pallet_timestamp::Config for Runtime {
-	/// A timestamp: milliseconds since the unix epoch.
-	type Moment = u64;
-	type OnTimestampSet = Aura;
-	type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-	type WeightInfo = ();
-}
-
-parameter_types! {
-	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
-}
-
-impl pallet_balances::Config for Runtime {
-	type MaxLocks = MaxLocks;
-	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8; 8];
-	/// The type for recording an account's balance.
-	type Balance = Balance;
-	/// The ubiquitous event type.
-	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
-	type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
-	type AccountStore = System;
-	type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-	type FreezeIdentifier = ();
-	type MaxFreezes = ();
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type RuntimeFreezeReason = RuntimeFreezeReason;
-}
-
-/// Logic for the author to get a portion of fees.
-pub type NegativeImbalance<T> = <pallet_balances::Pallet<T> as Currency<<T as frame_system::Config>::AccountId,>>::NegativeImbalance;
-pub struct ToAuthor<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToAuthor<R>
-where
-	R: pallet_balances::Config + pallet_authorship::Config,
-	<R as frame_system::Config>::AccountId: From<AccountId>,
-	<R as frame_system::Config>::AccountId: Into<AccountId>,
-{
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		if let Some(author) = <pallet_authorship::Pallet<R>>::author() {
-			log::info!("Fee credited to block author: {:?}", author);
-			<pallet_balances::Pallet<R>>::resolve_creating(&author, amount);
-		} else {
-			log::warn!("No block author found!");
-		}
-	}
-}
-
-parameter_types! {
-	// pub const TransactionByteFee: Balance = 5 * MILLICENTS;
-	pub FeeMultiplier: Multiplier = Multiplier::one();
-	/// This value increases the priority of `Operational` transactions by adding
-	/// a "virtual tip" that's equal to the `OperationalFeeMultiplier * final_fee`.
-	pub const OperationalFeeMultiplier: u8 = 5;
-}
-
-impl pallet_transaction_payment::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
-	type OperationalFeeMultiplier = ConstU8<5>;
-	type WeightToFee = IdentityFee<Balance>;
-	type LengthToFee = IdentityFee<Balance>;
-	type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-}
-
-// impl pallet_transaction_payment::Config for Runtime {
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type OnChargeTransaction = CurrencyAdapter<Balances, ToAuthor<Runtime>>;
-// 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
-// 	type WeightToFee = IdentityFee<Balance>;
-// 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-// 	type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-// }
-
-impl pallet_sudo::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
-}
-
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = pallet_template::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_utility::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type PalletsOrigin = OriginCaller;
-	type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
-}
-
-parameter_types! {
-	// Make sure put same value with `construct_runtime`
-	pub const AccessSegregatorPalletIndex: u8 = 15;
-	pub const BridgePalletIndex: u8 = 16;
-	// pub const BasicFeeHandlerPalletIndex: u8 = 10;
-	// pub const FeeHandlerRouterPalletIndex: u8 = 12;
-	// pub const PercentageFeeHandlerRouterPalletIndex: u8 = 13;
-	// RegisteredExtrinsics here registers all valid (pallet index, extrinsic_name) paris
-	// make sure to update this when adding new access control extrinsic
-	pub RegisteredExtrinsics: Vec<(u8, Vec<u8>)> = [
-		(AccessSegregatorPalletIndex::get(), b"grant_access".to_vec()),
-		(BridgePalletIndex::get(), b"register_domain".to_vec()),
-		(BridgePalletIndex::get(), b"unregister_domain".to_vec()),
-		(BridgePalletIndex::get(), b"transfer".to_vec()),
-		(BridgePalletIndex::get(), b"set_fee".to_vec()),
-		(BridgePalletIndex::get(), b"deposit".to_vec()),
-		(BridgePalletIndex::get(), b"execute_proposals".to_vec()),
-		(BridgePalletIndex::get(), b"pause_bridge".to_vec()),
-		(BridgePalletIndex::get(), b"unpause_bridge".to_vec()),
-		(BridgePalletIndex::get(), b"pause_all_bridges".to_vec()),
-		(BridgePalletIndex::get(), b"unpause_all_bridges".to_vec()),
-		// (BridgePalletIndex::get(), b"retry".to_vec()),
-		// (FeeHandlerRouterPalletIndex::get(), b"set_fee_handler".to_vec()),
-		// (PercentageFeeHandlerRouterPalletIndex::get(), b"set_fee_rate".to_vec()),
-	].to_vec();
-}
-
-
-impl aga_access_segregator::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type BridgeCommitteeOrigin = frame_system::EnsureRoot<Self::AccountId>;
-	type PalletIndex = AccessSegregatorPalletIndex;
-	type Extrinsics = RegisteredExtrinsics;
-	type WeightInfo = aga_access_segregator::weights::SygmaWeightInfo<Runtime>;
-}
-
-parameter_types! {
-	// TreasuryAccount is an substrate account and currently used for substrate -> EVM bridging fee collection
-	// TreasuryAccount address: 5ELLU7ibt5ZrNEYRwohtaRBDBa3TzcWwwPELBPSWWd2mbgv3
-	pub BridgeAccountNativeFee: AccountId = AccountId::new([100u8; 32]);
-	// BridgeAccountNative: 5EYCAe5jLbHcAAMKvLFSXgCTbPrLgBJusvPwfKcaKzuf5X5e
-	pub BridgeAccountNative: AccountId = AgaBridgePalletId::get().into_account_truncating();
-	// AgaBridgePalletId is the palletIDl
-	// this is used as the replacement of handler address in the ProposalExecution event
-	pub const AgaBridgePalletId: PalletId = PalletId(*b"aga/0001");
-	/// Native asset's ResourceId.
-	pub const AgaResourceId: [u8; 32] = [0u8; 32];
-}
-
-// This bridge only support AGA Coin
-impl aga_bridge::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type AssetKind = Balance;
-	type NativeBalances = Balances;
-	type TransferReserveAccount = BridgeAccountNative;
-	type FeeReserveAccount = BridgeAccountNativeFee;
-	type PalletId = AgaBridgePalletId;
-	type PalletIndex = BridgePalletIndex;
-	type ResourceId = AgaResourceId;
-	type WeightInfo = aga_bridge::weights::SubstrateWeight<Runtime>;
-}
-
-
-impl pallet_asset_rate::Config for Runtime {
-	type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
-	type RuntimeEvent = RuntimeEvent;
-	type CreateOrigin = EnsureRoot<AccountId>;
-	type RemoveOrigin = EnsureRoot<AccountId>;
-	type UpdateOrigin = EnsureRoot<AccountId>;
-	type Currency = Balances;
-	type AssetKind = u32;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = runtime_common::impls::benchmarks::AssetRateArguments;
-}
-
-parameter_types! {
-	pub const MaxWellKnownNodes: u32 = 8;
-	pub const MaxPeerIdLength: u32 = 128;
-}
-
-impl pallet_node_authorization::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type MaxWellKnownNodes = MaxWellKnownNodes;
-	type MaxPeerIdLength = MaxPeerIdLength;
-	type AddOrigin = EnsureRoot<AccountId>;
-	type RemoveOrigin = EnsureRoot<AccountId>;
-	type SwapOrigin = EnsureRoot<AccountId>;
-	type ResetOrigin = EnsureRoot<AccountId>;
-	type WeightInfo = ();
-}
-
-parameter_types! {
-	pub const MinAuthorities: u32 = 2;
-}
-
-impl pallet_validator_set::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type AddRemoveOrigin = EnsureRoot<AccountId>;
-	type MinAuthorities = MinAuthorities;
-	type WeightInfo = pallet_validator_set::weights::SubstrateWeight<Runtime>;
-}
-
-parameter_types! {
-	pub const Period: u32 = 2 * MINUTES;
-	pub const Offset: u32 = 0;
-}
-
-impl pallet_session::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type ValidatorId = <Self as frame_system::Config>::AccountId;
-	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Self>;
-	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type SessionManager = ValidatorSet;
-	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-	type Keys = opaque::SessionKeys;
-	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_session::historical::Config for Runtime {
-	type FullIdentification = Self::ValidatorId;
-	type FullIdentificationOf = Self::ValidatorIdOf;
-}
-
 construct_runtime!(
 	pub enum Runtime {
 		System: frame_system = 0,
@@ -509,22 +198,18 @@ construct_runtime!(
 		ValidatorSet: pallet_validator_set = 3,
 		Session: pallet_session = 4,
 		Aura: pallet_aura = 5,
-		Historical: pallet_session::historical = 6,
-		Grandpa: pallet_grandpa = 7,
-		TransactionPayment: pallet_transaction_payment = 8,
-		Sudo: pallet_sudo = 9,
-		TemplateModule: pallet_template = 10,
-		Assets: pallet_assets::<Instance1> = 11,
-		PoolAssets: pallet_assets::<Instance2> = 12,
-		AssetConversion: pallet_asset_conversion = 13,
-		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 14,
-		Utility: pallet_utility = 15,
-		Authorship: pallet_authorship = 16,
-		Contracts: pallet_contracts = 17,
-		AgaAccessSegregator: aga_access_segregator = 18,
-		AgaBridge: aga_bridge = 19,
-		AssetRate: pallet_asset_rate = 20,
-		NodeAuthorization: pallet_node_authorization = 21
+		Grandpa: pallet_grandpa = 6,
+		TransactionPayment: pallet_transaction_payment = 7,
+		Sudo: pallet_sudo = 8,
+		Assets: pallet_assets::<Instance1> = 9,
+		PoolAssets: pallet_assets::<Instance2> = 10,
+		AssetConversion: pallet_asset_conversion = 11,
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip = 12,
+		Utility: pallet_utility = 13,
+		Authorship: pallet_authorship = 14,
+		Contracts: pallet_contracts = 15,
+		AgaAccessSegregator: aga_access_segregator = 16,
+		AgaBridge: aga_bridge = 17
 	}
 );
 
@@ -572,17 +257,11 @@ type EventRecord = frame_system::EventRecord<
 	<Runtime as frame_system::Config>::Hash,
 >;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benches {
-	frame_benchmarking::define_benchmarks!(
-		[frame_benchmarking, BaselineBench::<Runtime>]
-		[frame_system, SystemBench::<Runtime>]
-		[pallet_balances, Balances]
-		[pallet_timestamp, Timestamp]
-		[pallet_sudo, Sudo]
-		[pallet_template, TemplateModule]
-	);
-}
+// Prints debug output of the `contracts` pallet to stdout if the node is
+// started with `-lruntime::contracts=debug`.
+const CONTRACTS_DEBUG_OUTPUT: pallet_contracts::DebugInfo = pallet_contracts::DebugInfo::UnsafeDebug;
+const CONTRACTS_EVENTS: pallet_contracts::CollectEvents = pallet_contracts::CollectEvents::UnsafeCollect;
+
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {

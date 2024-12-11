@@ -1,4 +1,4 @@
-use aga_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY, opaque::SessionKeys};
+use aga_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY, Balance, opaque::SessionKeys };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -32,10 +32,11 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
+// /// Generate an Aura authority key.
 // pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
 // 	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
 // }
+
 fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
 	SessionKeys { aura, grandpa }
 }
@@ -106,6 +107,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	.build())
 }
 
+const INITIAL_BALANCE: Balance = 100_000_000_000_000_000_000_000;
+
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	initial_authorities: Vec<(AccountId, AuraId, GrandpaId)>,
@@ -115,16 +118,21 @@ fn testnet_genesis(
 ) -> serde_json::Value {
 	serde_json::json!({
 		"balances": {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			"balances": endowed_accounts.iter().cloned().map(|k| (k, 1u64 << 60)).collect::<Vec<_>>(),
+			// Configure endowed accounts with initial balance.
+			"balances": endowed_accounts.iter().cloned().map(|k| (k, INITIAL_BALANCE)).collect::<Vec<_>>(),
 		},
 		"validatorSet": {
-			"initialValidators": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+			"initialValidators": initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
 		},
 		"session": {
-			"keys": initial_authorities.iter().map(|x| {
-				(x.0.clone(), x.0.clone(), session_keys(x.1.clone(), x.2.clone()))
-			}).collect::<Vec<_>>(),
+			"keys": initial_authorities
+				.iter()
+				.map(|x| (
+					x.0.clone(),
+					x.0.clone(),
+					session_keys(x.1.clone(), x.2.clone())
+				))
+				.collect::<Vec<_>>(),
 		},
 		"aura": {
 			"authorities": [],
@@ -133,7 +141,6 @@ fn testnet_genesis(
 			"authorities": [],
 		},
 		"sudo": {
-			// Assign network admin rights.
 			"key": Some(root_key),
 		}
 	})
